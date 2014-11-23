@@ -1,0 +1,30 @@
+Game phases:
+* Playing
+  * Paused or not
+  * Actions available:
+    * Left
+    * Right
+    * Continue
+    * Toggle paused
+    * when paused: exit to main menu, restart
+* Menu
+  * List of inputs
+  * Actions available:
+    * Update input (provide a delta for relevant fields)
+    * Exit to main menu
+    * Exit without saving
+* Game over screen
+  * Actions available
+    * Exit to main menu
+    * restart
+* Main menu
+  * Actions available
+    * Start game
+    * Reset parameters
+    * Randomize parameters
+    * Tweak parameters
+
+Inputs:
+* Button
+* Number
+  * Min, max
