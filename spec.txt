@@ -24,6 +24,55 @@ Game phases:
     * Randomize parameters
     * Tweak parameters
 
+Mutators
+* Big Head
+  The snake's head is wider.
+  * Radius : Int
+* Corner Walls
+  Every time the player turns, a wall is placed at the former location of the head.
+* Random Walls
+  Extra walls will be added at the start of the game and optionally at regular intervals thereafter.
+  * Amount : Nat
+  * Periodic?
+    * Interval : Float
+  * Random?
+    Deviation : Float
+* Extra Growth
+  When the player eats a piece of food, their length will increase by an amount in addition to the normal one.
+  * Amount : Nat
+  * Random?
+    * Deviation : Float
+* Moving Food
+  Pieces of food will move around.
+  * Random or flee player?
+* Phasing Food
+  Pieces of food are only intermittently edible. When not edible, they either vanish or turn into walls.
+  * Period : Float
+  * Random?
+    * Deviation : Float
+  * Vanish or turn to stone?
+* Spoiling Food
+  When a piece of food spawns, a counter is started. At the end of the timer, the piece of food becomes inedible, and either vanishes or turns to poison.
+  * Time : Float (as a fraction of the amount of time taken by the shortest path to the food)
+  * Random?
+    * Deviation : Float
+  * Vanish or poison?
+* Extra Food
+  Every time a piece of food is placed, this many additional pieces of food are also placed.
+  * Amount : Nat
+  * Random?
+    * Deviation : Float
+* Teleport
+  The player may press a button to instantly teleport some distance forward, passing through any intervening obstacles and leaving a gap in the snake's tail.
+  * Key : Char
+  * Distance : Nat
+  * Random?
+    * Deviation : Float
+* Reverse
+  The player may press a button to switch the snake's head and tail. This is either instant or takes some number of seconds.
+  * Key : Char
+  Time : Float
+
 Inputs:
 * Button
 * Number
