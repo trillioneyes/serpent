@@ -6,6 +6,8 @@ import Data.List
 
 data MenuInput : Type
 updateFor : MenuInput -> Type
+valueFor : MenuInput -> Type
+valuesFor : List MenuInput -> Type
 
 ||| A phase is intended to categorize gamestates by what actions are available, i.e. two gamestates
 ||| should have the same phase if and only if they support the same kinds of player actions. This allows
@@ -31,8 +33,13 @@ data Serpent : (Phase -> Type) -> Effect where
   Restart : { st (Playing True) ==> st (Playing False) } (Serpent st) ()
 
   Update : Elem i inputs -> updateFor i ->
-           { st (Menu inputs) } (Serpent st) ()
-  FinishMenu : (save : Bool) -> { st (Menu inputs) ==> st MainMenu } (Serpent st) ()
+           { st (Menu inputs) } (Serpent st) (valueFor i)
+  ExitMenu : { st (Menu inputs) ==> st MainMenu } (Serpent st) ()
+  SaveMenu : { st (Menu inputs) ==>
+               {valid} case valid of
+                 Nothing => st (Menu inputs)
+                 Just _ => st MainMenu
+             } (Serpent st) (Maybe (valuesFor inputs))
 
   PlayAgain : { st GameOver ==> st (Playing False) } (Serpent st) ()
   Finished : { st GameOver ==> st MainMenu } (Serpent st) ()
