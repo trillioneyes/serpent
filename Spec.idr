@@ -18,7 +18,8 @@ mutual
     valueFor : MenuInput -> Type
     valueFor (FloatBox _ _ _) = Float
     valueFor (NatBox _ _ _) = Nat
-    valueFor (Toggle _ _ _ extra _ _) = (toggle : Bool ** if toggle then valuesFor extra else ())
+    valueFor (Toggle _ _ _ extra _ _) =
+      assert_total (toggle : Bool ** if toggle then valuesFor extra else ())
     valueFor (Options _ names _ _) = (choice ** Elem choice names)
 
     valuesFor : List MenuInput -> Type
