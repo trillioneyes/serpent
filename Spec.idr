@@ -7,20 +7,20 @@ import Data.List
 ||| A data type for describing parameter input fields. FloatBox and NatBox represent numbers,
 ||| Toggle represents an on/off button with additional options for the on case, and Options
 ||| represents a set of mutually exclusive possibilities. The first String field is always a
-||| display name. The final two fields are a current and default value in that order.
+||| display name. The final field is a default value.
 data MenuInput : Type where
-  FloatBox : String -> Float -> Float -> MenuInput
-  NatBox : String -> Nat -> Nat -> MenuInput
-  Toggle : String -> String -> String -> List MenuInput -> Bool -> Bool -> MenuInput
-  Options : String -> (opts : List String) -> Elem choice opts -> Elem choice opts -> MenuInput
+  FloatBox : String -> Float -> MenuInput
+  NatBox : String -> Nat -> MenuInput
+  Toggle : String -> String -> String -> List MenuInput -> Bool -> MenuInput
+  Options : String -> (opts : List String) -> Elem choice opts -> MenuInput
 
 mutual
     valueFor : MenuInput -> Type
-    valueFor (FloatBox _ _ _) = Float
-    valueFor (NatBox _ _ _) = Nat
-    valueFor (Toggle _ _ _ extra _ _) =
+    valueFor (FloatBox _ _) = Float
+    valueFor (NatBox _ _) = Nat
+    valueFor (Toggle _ _ _ extra _) =
       assert_total (toggle : Bool ** if toggle then valuesFor extra else ())
-    valueFor (Options _ names _ _) = (choice ** Elem choice names)
+    valueFor (Options _ names _) = (choice ** Elem choice names)
 
     valuesFor : List MenuInput -> Type
     valuesFor (i :: inputs) = (valueFor i, valuesFor inputs)
@@ -29,38 +29,35 @@ mutual
 ||| updateFor is like 'valueFor', but 
 data updateFor : MenuInput -> Type where
   Exact : valueFor i -> updateFor i
-  Decrease : Nat -> updateFor (NatBox name (S current) def)
-  Increase : Nat -> updateFor (NatBox name current def)
-  Add : Float -> updateFor (FloatBox name current def)
-  Switch : updateFor (Toggle name off on extras current def)
+  Decrease : Nat -> updateFor (NatBox name def)
+  Increase : Nat -> updateFor (NatBox name def)
+  Add : Float -> updateFor (FloatBox name def)
+  Switch : updateFor (Toggle name off on extras def)
 
-updateParam : (inputs : List MenuInput) -> Elem i inputs -> updateFor i -> List MenuInput
-
-withDefault : a -> (a -> a -> b) -> b
-withDefault def input = input def def
+updateParam : (vals : valuesFor inputs) -> Elem i inputs -> updateFor i -> valuesFor inputs
 
 mutator : String -> List MenuInput -> MenuInput
-mutator name opts = withDefault False $ Toggle name "off" "on" opts
+mutator name opts = Toggle name "off" "on" opts False
 opts : String -> String -> List String -> MenuInput
-opts name def alts = withDefault Here $ Options name (def :: alts)
+opts name def alts = Options name (def :: alts) Here
 
 serpentParams : List MenuInput
 serpentParams = [
-  mutator "Big head" [(NatBox "Radius" 1 1)],
+  mutator "Big head" [NatBox "Radius" 1],
   mutator "Corner walls" [],
   mutator "Random walls" [
-    NatBox "Amount" 5 5,
-    mutator "Periodic" [FloatBox "Interval" 10 10],
-    mutator "Random amount" [FloatBox "Deviation" 1 1]
+    NatBox "Amount" 5,
+    mutator "Periodic" [FloatBox "Interval" 10],
+    mutator "Random amount" [FloatBox "Deviation" 1]
   ],
   mutator "Extra growth" [
-    NatBox "Amount" 1 1,
-    mutator "Random amount" [FloatBox "Deviation" 0.2 0.2]
+    NatBox "Amount" 1,
+    mutator "Random amount" [FloatBox "Deviation" 0.2]
   ],
   mutator "Moving food" [opts "Behavior" "Flee player" ["Move randomly"]],
   mutator "Phasing food" [
-    withDefault 1.5 $ FloatBox "Period",
-    mutator "Random duration" [withDefault 0.05 $ FloatBox "Deviation"],
+    FloatBox "Period" 1.5,
+    mutator "Random duration" [FloatBox "Deviation" 0.05],
     opts "While phased..." "Vanish" ["Turn to stone"]
   ]
   -- This isn't done yet... spend some not-working time entering the parameters

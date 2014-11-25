@@ -22,13 +22,13 @@ advance (Seg dir Z end :: rest) = rest
 
 ||| The pieces of game state that are shared across all phases
 record Universal : Type where
-  MkU : (windowDimensions : (Int, Int)) -> (params : List MenuInput) -> Universal
+  MkU : (windowDimensions : (Int, Int)) -> (params : valuesFor serpentParams) -> Universal
 
 ||| The concrete representation of the game state.
 data Game : Phase -> Type where
   InGame : Snake -> (walls : List Coord) -> (food : List Coord) -> (score : Nat) -> Universal ->
            Game (Playing isPaused)
-  InMenu : (pending : List MenuInput) -> Universal -> Game (Menu pending)
+  InMenu : (vals : valuesFor inputs) -> Universal -> Game (Menu inputs)
   Dead : Game (Playing False) -> Game GameOver
   IntroScreen : Universal -> Game (Playing False) -> Game MainMenu
 
