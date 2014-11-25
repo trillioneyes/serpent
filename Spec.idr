@@ -64,14 +64,17 @@ serpentParams = [
   -- because this is super boring and annoying
 ]
 
+Ruleset : Type
+Ruleset = valuesFor serpentParams
+
 ||| A phase is intended to categorize gamestates by what actions are available, i.e. two gamestates
 ||| should have the same phase if and only if they support the same kinds of player actions. This allows
 ||| us to state the specification without committing to a particular gamestate representation.
 data Phase : Type where
-  Playing : (paused : Bool) -> Phase
-  MainMenu : Phase
-  Menu : List MenuInput -> Phase
-  GameOver : Phase
+  Playing : (paused : Bool) -> Ruleset -> Phase
+  MainMenu : Ruleset -> Phase
+  Menu : List MenuInput -> Ruleset -> Phase
+  GameOver : Ruleset -> Phase
 
 data Direction = Straight | TurnLeft | TurnRight
 
@@ -80,26 +83,28 @@ data Direction = Straight | TurnLeft | TurnRight
 data Serpent : (Phase -> Type) -> Effect where
 
   Turn : Direction -> 
-         { st (Playing False) ==> 
-           {hitWall} if hitWall then st GameOver else st (Playing False) 
+         { st (Playing False rules) ==> 
+           {hitWall} st (if hitWall then GameOver rules else Playing False rules)
          } (Serpent st) Bool
-  TogglePause : { st (Playing b) ==> st (Playing (not b)) } (Serpent st) ()
-  Quit : { st (Playing True) ==> st MainMenu } (Serpent st) ()
-  Restart : st (Playing False) -> { st (Playing True) ==> st (Playing False) } (Serpent st) ()
+  TogglePause : { st (Playing b rules) ==> st (Playing (not b) rules) } (Serpent st) ()
+  Quit : { st (Playing True rules) ==> st (MainMenu rules) } (Serpent st) ()
+  Restart : st (Playing False rules) -> 
+            { st (Playing True rules) ==> st (Playing False rules) } (Serpent st) ()
 
   Update : Elem i inputs -> updateFor i ->
-           { st (Menu inputs) } (Serpent st) (valueFor i)
-  ExitMenu : { st (Menu inputs) ==> st MainMenu } (Serpent st) ()
-  SaveMenu : { st (Menu inputs) ==>
+           { st (Menu inputs rules) } (Serpent st) (valueFor i)
+  ExitMenu : { st (Menu inputs rules) ==> st (MainMenu rules) } (Serpent st) ()
+  SaveMenu : { st (Menu snakeParams rules) ==>
                {valid} case valid of
-                 Nothing => st (Menu inputs)
-                 Just _ => st MainMenu
-             } (Serpent st) (Maybe (valuesFor inputs))
+                 Nothing => st (Menu snakeParams rules)
+                 Just new => st (MainMenu new)
+             } (Serpent st) (Maybe Ruleset)
 
-  PlayAgain : { st GameOver ==> st (Playing False) } (Serpent st) ()
-  Finished : { st GameOver ==> st MainMenu } (Serpent st) ()
+  PlayAgain : { st (GameOver rules) ==> st (Playing False rules) } (Serpent st) ()
+  Finished : { st (GameOver rules) ==> st (MainMenu rules) } (Serpent st) ()
 
-  NewGame : st (Playing False) -> { st MainMenu ==> st (Playing False) } (Serpent st) ()
-  Randomize : valuesFor serpentParams -> { st MainMenu } (Serpent st) (valuesFor serpentParams)
-  Reset : { st MainMenu } (Serpent st) (valuesFor serpentParams)
-  Tweak : { st MainMenu ==> st (Menu serpentParams) } (Serpent st) ()
+  NewGame : st (Playing False rules) -> 
+            { st (MainMenu rules) ==> st (Playing False rules) } (Serpent st) ()
+  Randomize : Ruleset -> { st (MainMenu rules) } (Serpent st) Ruleset
+  Reset : { st (MainMenu rules) } (Serpent st) Ruleset
+  Tweak : { st (MainMenu rules) ==> st (Menu serpentParams rules) } (Serpent st) ()
