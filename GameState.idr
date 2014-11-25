@@ -50,4 +50,8 @@ instance Handler (Serpent Game) m where
 
   handle (InMenu pending univ) (Update param new) k =
     k ?newParamValue (InMenu (updateParam pending param new) univ)
-      
+  handle (InMenu pending univ) ExitMenu k =
+    k () (IntroScreen univ ?randomGame3)
+  handle (InMenu {inputs} pending univ) SaveMenu k = ?validate 
+
+  handle (Dead gameover univ) PlayAgain  
