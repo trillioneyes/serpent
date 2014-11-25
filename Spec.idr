@@ -100,7 +100,8 @@ data Serpent : (Phase -> Type) -> Effect where
                  Just new => st (MainMenu new)
              } (Serpent st) (Maybe Ruleset)
 
-  PlayAgain : { st (GameOver rules) ==> st (Playing False rules) } (Serpent st) ()
+  PlayAgain : st (Playing False rules) ->
+              { st (GameOver rules) ==> st (Playing False rules) } (Serpent st) ()
   Finished : { st (GameOver rules) ==> st (MainMenu rules) } (Serpent st) ()
 
   NewGame : st (Playing False rules) -> 
