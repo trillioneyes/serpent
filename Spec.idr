@@ -34,6 +34,8 @@ data updateFor : MenuInput -> Type where
   Add : Float -> updateFor (FloatBox name current def)
   Switch : updateFor (Toggle name off on extras current def)
 
+updateParam : (inputs : List MenuInput) -> Elem i inputs -> updateFor i -> List MenuInput
+
 withDefault : a -> (a -> a -> b) -> b
 withDefault def input = input def def
 
