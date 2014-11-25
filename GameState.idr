@@ -29,7 +29,7 @@ data Game : Phase -> Type where
   InGame : Snake -> (walls : List Coord) -> (food : List Coord) -> (score : Nat) -> Universal ->
            Game (Playing isPaused)
   InMenu : (vals : valuesFor inputs) -> Universal -> Game (Menu inputs)
-  Dead : Game (Playing False) -> Game GameOver
+  Dead : Game (Playing False) -> Universal -> Game GameOver
   IntroScreen : Universal -> Game (Playing False) -> Game MainMenu
 
 data Collision = Food | Wall
