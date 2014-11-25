@@ -85,7 +85,7 @@ data Serpent : (Phase -> Type) -> Effect where
          } (Serpent st) Bool
   TogglePause : { st (Playing b) ==> st (Playing (not b)) } (Serpent st) ()
   Quit : { st (Playing True) ==> st MainMenu } (Serpent st) ()
-  Restart : { st (Playing True) ==> st (Playing False) } (Serpent st) ()
+  Restart : st (Playing False) -> { st (Playing True) ==> st (Playing False) } (Serpent st) ()
 
   Update : Elem i inputs -> updateFor i ->
            { st (Menu inputs) } (Serpent st) (valueFor i)
@@ -99,7 +99,7 @@ data Serpent : (Phase -> Type) -> Effect where
   PlayAgain : { st GameOver ==> st (Playing False) } (Serpent st) ()
   Finished : { st GameOver ==> st MainMenu } (Serpent st) ()
 
-  NewGame : { st MainMenu ==> st (Playing False) } (Serpent st) ()
-  Randomize : { st MainMenu } (Serpent st) ()
-  Reset : { st MainMenu } (Serpent st) ()
+  NewGame : st (Playing False) -> { st MainMenu ==> st (Playing False) } (Serpent st) ()
+  Randomize : valuesFor serpentParams -> { st MainMenu } (Serpent st) (valuesFor serpentParams)
+  Reset : { st MainMenu } (Serpent st) (valuesFor serpentParams)
   Tweak : { st MainMenu ==> st (Menu serpentParams) } (Serpent st) ()
