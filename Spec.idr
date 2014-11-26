@@ -34,7 +34,28 @@ data updateFor : MenuInput -> Type where
   Add : Float -> updateFor (FloatBox name def)
   Switch : updateFor (Toggle name off on extras def)
 
+getValue : Elem i inputs -> valuesFor inputs -> valueFor i
+getValue Here (a, b) = a
+getValue (There p) (a, b) = getValue p b
+
+defaults : (inputs : List MenuInput) -> valuesFor inputs
+defaults [] = ()
+defaults (i :: inputs) = (def, defaults inputs) where
+  def = case i of
+    FloatBox name d => d
+    NatBox name d => d
+    Toggle name off on extra True => (True ** defaults extra)
+    Toggle name off on extra False => (False ** ())
+    Options {choice} name opts d => (choice ** d)
+
 updateParam : (vals : valuesFor inputs) -> Elem i inputs -> updateFor i -> valuesFor inputs
+updateParam (a, b) Here (Exact x) = (x, b)
+updateParam (a, b) Here (Decrease k) = (a - k, b)
+updateParam (a, b) Here (Increase k) = (a + k, b)
+updateParam (a, b) Here (Add x) = (a + x, b)
+updateParam ((True ** extra), b) Here Switch = ((False ** ()), b)
+updateParam {i=Toggle _ _ _ i _} ((False ** ()), b) Here Switch = ((True ** defaults i), b)
+updateParam (a, b) (There x) update = (a, updateParam b x update)
 
 mutator : String -> List MenuInput -> MenuInput
 mutator name opts = Toggle name "off" "on" opts False
