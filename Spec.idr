@@ -19,7 +19,7 @@ mutual
     valueFor (FloatBox _ _) = Float
     valueFor (NatBox _ _) = Nat
     valueFor (Toggle _ _ _ extra _) =
-      assert_total (toggle : Bool ** if toggle then valuesFor extra else ())
+      assert_total (Maybe (valuesFor extra))
     valueFor (Options _ names _) = (choice ** Elem choice names)
 
     valuesFor : List MenuInput -> Type
@@ -40,12 +40,12 @@ getValue (There p) (a, b) = getValue p b
 
 defaults : (inputs : List MenuInput) -> valuesFor inputs
 defaults [] = ()
-defaults (i :: inputs) = (def, defaults inputs) where
+defaults (i :: inputs) = (assert_total def, defaults inputs) where
   def = case i of
     FloatBox name d => d
     NatBox name d => d
-    Toggle name off on extra True => (True ** defaults extra)
-    Toggle name off on extra False => (False ** ())
+    Toggle name off on extra True => Just (defaults extra)
+    Toggle name off on extra False => Nothing
     Options {choice} name opts d => (choice ** d)
 
 updateParam : (vals : valuesFor inputs) -> Elem i inputs -> updateFor i -> valuesFor inputs
@@ -53,8 +53,8 @@ updateParam (a, b) Here (Exact x) = (x, b)
 updateParam (a, b) Here (Decrease k) = (a - k, b)
 updateParam (a, b) Here (Increase k) = (a + k, b)
 updateParam (a, b) Here (Add x) = (a + x, b)
-updateParam ((True ** extra), b) Here Switch = ((False ** ()), b)
-updateParam {i=Toggle _ _ _ i _} ((False ** ()), b) Here Switch = ((True ** defaults i), b)
+updateParam (Just _, b) Here Switch = (Nothing, b)
+updateParam {i=Toggle _ _ _ i _} (Nothing, b) Here Switch = (Just (defaults i), b)
 updateParam (a, b) (There x) update = (a, updateParam b x update)
 
 mutator : String -> List MenuInput -> MenuInput
@@ -128,5 +128,5 @@ data Serpent : (Phase -> Type) -> Effect where
   NewGame : st (Playing False rules) -> 
             { st (MainMenu rules) ==> st (Playing False rules) } (Serpent st) ()
   Randomize : (new : Ruleset) -> { st (MainMenu rules) ==> st (MainMenu new) } (Serpent st) Ruleset
-  Reset : { st (MainMenu rules) ==> st (MainMenu (defaults serpentParams)) } (Serpent st) Ruleset
+  Reset : { st (MainMenu rules) ==> st (MainMenu (defaults serpentParams)) } (Serpent st) ()
   Tweak : { st (MainMenu rules) ==> st (Menu serpentParams rules) } (Serpent st) ()
