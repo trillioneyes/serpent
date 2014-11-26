@@ -127,6 +127,6 @@ data Serpent : (Phase -> Type) -> Effect where
 
   NewGame : st (Playing False rules) -> 
             { st (MainMenu rules) ==> st (Playing False rules) } (Serpent st) ()
-  Randomize : Ruleset -> { st (MainMenu rules) } (Serpent st) Ruleset
-  Reset : { st (MainMenu rules) } (Serpent st) Ruleset
+  Randomize : (new : Ruleset) -> { st (MainMenu rules) ==> st (MainMenu new) } (Serpent st) Ruleset
+  Reset : { st (MainMenu rules) ==> st (MainMenu (defaults serpentParams)) } (Serpent st) Ruleset
   Tweak : { st (MainMenu rules) ==> st (Menu serpentParams rules) } (Serpent st) ()
