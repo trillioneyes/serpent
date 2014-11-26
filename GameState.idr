@@ -11,14 +11,15 @@ data Orientation = ToLeft | ToRight | ToTop | ToBottom
 ||| and to the right.
 data TailSegment = Seg Orientation Nat Coord
 
-||| A list of 'TailSegment's, with the head at the end.
+||| A list of 'TailSegment's, with the head at the beginning.
 Snake : Type
 Snake = List TailSegment
 
-advance : Snake -> Snake
-advance [] = []
-advance (Seg dir (S length) end :: rest) = Seg dir length end :: rest
-advance (Seg dir Z end :: rest) = rest
+retract : Snake -> Snake
+retract [] = []
+retract [Seg dir (S length) end] = [Seg dir length end]
+retract [Seg dir Z end] = []
+retract (Seg dir length end :: rest) = Seg dir length end :: retract rest
 
 ||| The pieces of game state that are shared across all phases
 record Universal : Type where
@@ -33,9 +34,42 @@ data Game : Phase -> Type where
   IntroScreen : (univ : Universal) -> Game (MainMenu (params univ))
 
 data Collision = Food | Wall
+
+newHead : Orientation -> Coord -> Coord
+newHead ToLeft (x, y) = (x-1, y)
+newHead ToRight (x, y) = (x+1, y)
+newHead ToTop (x, y) = (x, y-1)
+newHead ToBottom (x, y) = (x, y+1)
+
+extend : Direction -> Snake -> Snake
+extend _ [] = []
+extend Straight (Seg o l h :: segs) = Seg o (S l) (newHead o h) :: segs
+extend dir (Seg o l h :: segs) =
+    Seg (turn dir o) (newLen dir l) (newHead (turn dir o) h) :: Seg o l h :: segs
+  where turn : Direction -> Orientation -> Orientation
+        turn TurnLeft ToLeft = ToBottom
+        turn TurnLeft ToRight = ToTop
+        turn TurnLeft ToTop = ToLeft
+        turn TurnLeft ToBottom = ToRight
+        turn TurnRight ToLeft = ToTop
+        turn TurnRight ToRight = ToBottom
+        turn TurnRight ToTop = ToRight
+        turn TurnRight ToBottom = ToLeft
+        turn Straight o = o
+        newLen : Direction -> Nat -> Nat
+        newLen Straight l = S l
+        newLen _ l = 1
+
 doMove : Direction -> Game (Playing False rules) -> (Game (Playing False rules), Maybe Collision)
+doMove relDir (InGame snake walls food score univ) = (InGame newSnake newWalls newFood newScore univ, coll)
+  where newSnake = extend relDir snake
+        newWalls = walls -- later should check the rules for wall creation
+        newFood = food -- same for food creation
+        coll = ?checkCollision
+        newScore = ?score
 
 instance Handler (Serpent Game) m where
+
   handle (InGame snake walls food score univ) (Turn d) k =
     let ingame = (InGame snake walls food score univ)
         (next, collision) = doMove d ingame
@@ -58,8 +92,8 @@ instance Handler (Serpent Game) m where
   handle (Dead gameover univ) Finished k = k () (IntroScreen univ)
 
   handle (IntroScreen univ) (NewGame st) k = k () st
-  handle (IntroScreen univ) (Randomize newRules) k =
-    let new = ?newUniv in k newRules new
+  handle (IntroScreen (MkU dim params)) (Randomize newRules) k =
+    k newRules (IntroScreen (MkU dim newRules))
   handle (IntroScreen univ) Reset k = 
         k () (conv (IntroScreen (record { params = defaults serpentParams } univ)))
     where obv : params (set_params p u) = p
