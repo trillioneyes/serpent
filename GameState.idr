@@ -63,7 +63,7 @@ instance Handler (Serpent Game) m where
   handle (IntroScreen univ) Reset k = 
         k () (conv (IntroScreen (record { params = defaults serpentParams } univ)))
     where obv : params (set_params p u) = p
-          obv {p} {u} = believe_me (Refl {p}) -- apparently these don't compute >.>
+          obv {p} {u = MkU dims old} = Refl
           conv : Game (MainMenu (params (set_params p u))) -> Game (MainMenu p)
           conv g = replace {P = \rules => Game (MainMenu rules) } obv g
   handle (IntroScreen univ) Tweak k = k () (InMenu (params univ) univ)
