@@ -61,6 +61,9 @@ instance Handler (Serpent Game) m where
   handle (IntroScreen univ) (Randomize newRules) k =
     let new = ?newUniv in k newRules new
   handle (IntroScreen univ) Reset k = 
-        k (defaults serpentParams) (replace obv (IntroScreen (record { params = defaults serpentParams } univ)))
+        k () (conv (IntroScreen (record { params = defaults serpentParams } univ)))
     where obv : params (set_params p u) = p
           obv {p} {u} = believe_me (Refl {p}) -- apparently these don't compute >.>
+          conv : Game (MainMenu (params (set_params p u))) -> Game (MainMenu p)
+          conv g = replace {P = \rules => Game (MainMenu rules) } obv g
+  handle (IntroScreen univ) Tweak k = k () (InMenu (params univ) univ)
