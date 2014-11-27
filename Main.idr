@@ -24,28 +24,27 @@ GAME ph = MkEff (Game ph) (Serpent Game)
 tick : Float -> { [FPS n] } Eff Bool
 tick {n} delta = call (Tick delta)
 
-turn : Direction -> { [GAME (Playing False rules)] ==> {hitWall} [if hitWall then GAME (GameOver rules) else GAME (Playing False rules)] } Eff Bool
+turn : (dir : Direction) -> 
+       { [GAME (Playing False rules)] ==>
+         {hitWall} [GAME (if hitWall then GameOver rules else (Playing False rules))] 
+       } Eff Bool
 turn dir = call (Turn dir)
 
-stepGame : InputState -> Float -> 
-           { [GAME (Playing False rules), FPS 5] ==>
-             {hitWall} [if hitWall then GAME (GameOver rules) else GAME (Playing False rules), FPS 5] 
+GameClock : EFFECT
+GameClock = 'GameClock ::: FPS 5
+
+stepGame : InputState -> Float ->
+           { [GAME (Playing False rules), GameClock]
+             ==> {hitWall}
+             [GAME (if hitWall then GameOver rules else Playing False rules), GameClock]
            } Eff Bool
 stepGame (MkI {button}) delta = do
-  if !(tick delta)
+  if !('GameClock :- tick delta)
      then turn (case button of
                     Just 'a' => TurnLeft
                     Just 'd' => TurnRight
                     _ => Straight)
-     else pure False
-
--- stepGame : InputState -> Float -> Game (Playing False rules) -> Game (Playing False rules)
--- stepGame (MkI {button}) t (InGame xs walls food score univ) = runPure $ do
---   Turn (case button of
---          'w' => Straight
---          'a' => TurnLeft
---          'd' => TurnRight
---          _ => Straight)
+     else value False
 
 main : IO ()
 main = setLoop (loop {st = Game (Playing False (defaults serpentParams))} 0 ?play ?initState)
