@@ -65,18 +65,23 @@ doMove relDir (InGame snake walls food score univ) = (InGame newSnake newWalls n
   where newSnake = extend relDir snake
         newWalls = walls -- later should check the rules for wall creation
         newFood = food -- same for food creation
-        coll = ?checkCollision
-        newScore = ?score
+        coll = Nothing -- ?checkCollision
+        newScore = score -- ?score
+
+retractSnake : Game (Playing paused rules) -> Game (Playing paused rules)
+retractSnake (InGame snake walls food score univ) =
+  InGame (retract snake) walls food score univ
 
 instance Handler (Serpent Game) m where
 
-  handle (InGame snake walls food score univ) (Turn d) k =
-    let ingame = (InGame snake walls food score univ)
+  handle (InGame snake walls food score (MkU dims ps)) (Turn d) k =
+    let ingame = InGame snake walls food score (MkU dims ps)
         (next, collision) = doMove d ingame
+        InGame snake walls food score (MkU dims ps) = next
     in case collision of
-         Nothing => k False next
+         Nothing => k False (retractSnake next)
          Just Food => k False next -- need to grow the snake
-         Just Wall => k True (Dead next univ)
+         Just Wall => k True (Dead (retractSnake next) (MkU dims ps))
   handle (InGame {isPaused} snake walls food score univ) TogglePause k =
     k () (InGame {isPaused = not isPaused} snake walls food score univ)
   handle (InGame _ _ _ _ univ) Quit k = k () (IntroScreen univ)
@@ -87,7 +92,7 @@ instance Handler (Serpent Game) m where
     in k (getValue param new) (InMenu new univ)
   handle (InMenu pending univ) ExitMenu k =
     k () (IntroScreen univ)
-  handle (InMenu {inputs} pending univ) SaveMenu k = ?validate
+  handle (InMenu pending (MkU dims ps)) SaveMenu k = k (Just pending) (IntroScreen (MkU dims pending)) -- ?validate
 
   handle (Dead gameover univ) (PlayAgain newState) k = k () newState
   handle (Dead gameover univ) Finished k = k () (IntroScreen univ)
