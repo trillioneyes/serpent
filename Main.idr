@@ -1,6 +1,7 @@
 module Main
 import CallbackStack
 import GameState
+import Draw
 import Effects
 
 %include javascript "helper.js"
@@ -48,5 +49,10 @@ stepGame (MkI {button}) delta = do
                     _ => Straight)
      else value False
 
+startState : Game (Playing False rules)
+startState {rules} = InGame snake [] [] 0 (MkU (600, 400) rules)
+  where snake = [Seg ToRight 4 (2, 0)]
+
 main : IO ()
-main = setLoop (loop {st = Game (Playing False (defaults serpentParams))} 0 ?play ?initState)
+main = drawGame {rules = defaults serpentParams} startState
+--setLoop (loop {st = Game (Playing False (defaults serpentParams))} 0 ?play ?initState)

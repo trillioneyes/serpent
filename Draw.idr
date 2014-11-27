@@ -1,6 +1,17 @@
 module Draw
 import GameState
 
+canvasWidth : IO Int
+canvasWidth = mkForeign (FFun "game_width()" [] FInt)
+canvasHeight : IO Int
+canvasHeight = mkForeign (FFun "game_height()" [] FInt)
+
+convert : Coord -> IO Coord
+convert (x, y) = do
+  w <- canvasWidth
+  h <- canvasHeight
+  return $ assert_total (x + (w `div` 2), y + (h `div` 2))
+
 rect : Coord -> (w : Nat) -> (h : Nat) -> IO ()
 rect (centerX, centerY) w h =
     mkForeign (FFun "context.fillRect(%0, %1, %2, %3)" [FInt, FInt, FInt, FInt] FUnit)
@@ -15,7 +26,7 @@ boundingRect (Seg ToTop h (headX, headY)) = ((headX, headY + cast (S h `div` 2))
 boundingRect (Seg ToBottom h (headX, headY)) = ((headX, headY - cast (S h `div` 2)), 10, S h `div` 2)
 
 drawSegment : TailSegment -> IO ()
-drawSegment seg = let (c, w, h) = boundingRect seg in rect c w h
+drawSegment seg = let (c, w, h) = boundingRect seg in rect !(convert c) w h
 
 drawSnake : Snake -> IO ()
 drawSnake = traverse_ drawSegment
