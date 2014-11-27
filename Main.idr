@@ -3,6 +3,8 @@ import CallbackStack
 import GameState
 import Effects
 
+%include javascript "helper.js"
+
 record InputState : Type where
   MkI : {button : Maybe Char} -> InputState
 
