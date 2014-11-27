@@ -80,7 +80,7 @@ instance Handler (Serpent Game) m where
         InGame snake walls food score (MkU dims ps) = next
     in case collision of
          Nothing => k False (retractSnake next)
-         Just Food => k False next -- need to grow the snake
+         Just Food => k False next
          Just Wall => k True (Dead (retractSnake next) (MkU dims ps))
   handle (InGame {isPaused} snake walls food score univ) TogglePause k =
     k () (InGame {isPaused = not isPaused} snake walls food score univ)
