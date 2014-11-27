@@ -82,8 +82,9 @@ instance Handler (Serpent Game) m where
   handle (InGame _ _ _ _ univ) Quit k = k () (IntroScreen univ)
   handle (InGame _ _ _ _ univ) (Restart new) k = k () new
 
-  handle (InMenu pending univ) (Update param new) k =
-    k ?newParamValue (InMenu (updateParam pending param new) univ)
+  handle (InMenu pending univ) (Update param upd) k =
+    let new = updateParam pending param upd
+    in k (getValue param new) (InMenu new univ)
   handle (InMenu pending univ) ExitMenu k =
     k () (IntroScreen univ)
   handle (InMenu {inputs} pending univ) SaveMenu k = ?validate
