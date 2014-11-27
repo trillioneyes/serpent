@@ -115,9 +115,9 @@ data Serpent : (Phase -> Type) -> Effect where
   Update : Elem i inputs -> updateFor i ->
            { st (Menu inputs rules) } (Serpent st) (valueFor i)
   ExitMenu : { st (Menu inputs rules) ==> st (MainMenu rules) } (Serpent st) ()
-  SaveMenu : { st (Menu snakeParams rules) ==>
+  SaveMenu : { st (Menu serpentParams rules) ==>
                {valid} case valid of
-                 Nothing => st (Menu snakeParams rules)
+                 Nothing => st (Menu serpentParams rules)
                  Just new => st (MainMenu new)
              } (Serpent st) (Maybe Ruleset)
 
