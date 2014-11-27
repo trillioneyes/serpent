@@ -1,16 +1,16 @@
 module CallbackStack
 
 codata Loop : Type -> Type where
-  MkLoop : IO (Int, st) -> Inf (st -> Loop st) -> Loop st
+  MkLoop : IO st -> Inf (st -> Float -> Loop st) -> Loop st
 
-loop : (st -> IO st) -> (init : st) -> (interval : Int) -> Loop st
-loop step init interval = MkLoop (map (MkPair interval) (step init)) iter where
-  iter prev = loop step prev interval
+loop : Float -> (Float -> st -> IO st) -> (init : st) -> Loop st
+loop t step init = MkLoop (step t init) iter where
+  iter prev time = loop time step prev
 
 setLoop : Loop st -> IO ()
 setLoop {st} (MkLoop start f) = do
-  (time, val) <- start
-  setTimeout (\() => setLoop (f val)) time
- where setTimeout : (() -> IO ()) -> Int -> IO ()
-       setTimeout f t =
-         mkForeign (FFun "setTimeout(%0, %1)" [FFunction FUnit (FAny (IO ())), FInt] FUnit) f t
+  val <- start
+  setTimeout (\t => setLoop (f val t))
+ where setTimeout : (Float -> IO ()) -> IO ()
+       setTimeout f =
+         mkForeign (FFun "requestAnimationFrame(%0)" [FFunction FFloat (FAny (IO ()))] FUnit) f

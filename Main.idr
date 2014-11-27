@@ -10,4 +10,4 @@ announceDec x = do
   return (x-1)
 
 main : IO ()
-main = setLoop (loop announceDec 10 1000)
+main = setLoop (loop {st = Game (Playing False (defaults serpentParams))} 0 ?play ?initState)
