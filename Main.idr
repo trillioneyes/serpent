@@ -2,6 +2,7 @@ module Main
 import CallbackStack
 import GameState
 import Draw
+import Interact
 import Effects
 
 %include javascript "helper.js"
@@ -21,17 +22,8 @@ instance Handler (Frames fps) m where
 FPS : Nat -> EFFECT
 FPS fps = MkEff (Float, Float) (Frames fps)
 
-GAME : Phase -> EFFECT
-GAME ph = MkEff (Game ph) (Serpent Game)
-
 tick : Float -> { [FPS n] } Eff Bool
 tick {n} delta = call (Tick delta)
-
-turn : (dir : Direction) -> 
-       { [GAME (Playing False rules)] ==>
-         {hitWall} [GAME (if hitWall then GameOver rules else (Playing False rules))] 
-       } Eff Bool
-turn dir = call (Turn dir)
 
 GameClock : EFFECT
 GameClock = 'GameClock ::: FPS 5
@@ -53,6 +45,22 @@ startState : Game (Playing False rules)
 startState {rules} = InGame snake [] [] 0 (MkU (600, 400) rules)
   where snake = [Seg ToRight 4 (2, 0)]
 
+endless : { [GAME (Playing False rules)] } Eff ()
+endless = do
+  hit <- turn Straight
+  case hit of
+    True => playAgain startState
+    False => value ()
+
+dummyGame : { [GAME (Playing False rules), GameClock, NONBLOCKING] } Eff ()
+dummyGame = do
+  if !('GameClock :- tick !yield)
+     then endless
+     else value ()
+  dummyGame
+
 main : IO ()
-main = drawGame {rules = defaults serpentParams} startState
+main = unSideEffect $ runInit {a = ()} {m = SideEffect} env dummyGame
+  where env : Env SideEffect [GAME (Playing False (defaults serpentParams)), GameClock, NONBLOCKING]
+        env = [startState, 'GameClock := (0, 0), ()]
 --setLoop (loop {st = Game (Playing False (defaults serpentParams))} 0 ?play ?initState)

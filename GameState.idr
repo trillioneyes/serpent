@@ -107,3 +107,6 @@ instance Handler (Serpent Game) m where
           conv : Game (MainMenu (params (set_params p u))) -> Game (MainMenu p)
           conv g = replace {P = \rules => Game (MainMenu rules) } obv g
   handle (IntroScreen univ) Tweak k = k () (InMenu (params univ) univ)
+
+GAME : Phase -> EFFECT
+GAME ph = GameEff Game ph

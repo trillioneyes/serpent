@@ -130,3 +130,56 @@ data Serpent : (Phase -> Type) -> Effect where
   Randomize : (new : Ruleset) -> { st (MainMenu rules) ==> st (MainMenu new) } (Serpent st) Ruleset
   Reset : { st (MainMenu rules) ==> st (MainMenu (defaults serpentParams)) } (Serpent st) ()
   Tweak : { st (MainMenu rules) ==> st (Menu serpentParams rules) } (Serpent st) ()
+
+GameEff : (Phase -> Type) -> Phase -> EFFECT
+GameEff st ph = MkEff (st ph) (Serpent st)
+
+turn : Direction -> 
+       { [GameEff st (Playing False rules)] 
+         ==> {hitWall} 
+         [GameEff st (if hitWall then GameOver rules else Playing False rules)]
+       } Eff Bool
+turn {st} {rules} d = call (Turn {st} {rules} d)
+
+togglePause : { [GameEff st (Playing isPaused rules)] ==> [GameEff st (Playing (not isPaused) rules)] }
+              Eff ()
+togglePause {isPaused} {st} {rules} = call (TogglePause {st} {rules} {b = isPaused})
+
+quit : { [GameEff st (Playing True rules)] ==> [GameEff st (MainMenu rules)] } Eff ()
+quit {st} {rules} = call $ Quit {st} {rules}
+
+restart : st (Playing False rules) ->
+          { [GameEff st (Playing True rules)] ==> [GameEff st (Playing False rules)] } Eff ()
+restart {st} {rules} newGame = call (Restart {st} {rules} newGame)
+
+update : Elem i inputs -> updateFor i ->
+         { [GameEff st (Menu inputs rules)] } Eff (valueFor i)
+update {i} {inputs} {st} {rules} prf upd = call (Update {i} {inputs} {rules} {st} prf upd)
+
+exitMenu : { [GameEff st (Menu inputs rules)] ==> [GameEff st (MainMenu rules)] } Eff ()
+exitMenu {st} {inputs} {rules} = call (ExitMenu {st} {inputs} {rules})
+
+saveMenu : { [GameEff st (Menu serpentParams rules)]
+             ==> {valid}
+             case valid of
+               Nothing => [GameEff st (Menu serpentParams rules)]
+               Just new => [GameEff st (MainMenu new)]
+           } Eff (Maybe Ruleset)
+saveMenu {st} {rules} = call (SaveMenu {st} {rules})
+
+playAgain : st (Playing False rules) -> { [GameEff st (GameOver rules)] ==> [GameEff st (Playing False rules)] } Eff ()
+playAgain {st} {rules} newGame = call (PlayAgain {st} {rules} newGame)
+
+finished : { [GameEff st (GameOver rules)] ==> [GameEff st (MainMenu rules)] } Eff ()
+finished {st} {rules} = call (Finished {st} {rules})
+
+newGame : st (Playing False rules) -> 
+          { [GameEff st (MainMenu rules)] ==> [GameEff st (Playing False rules)] } Eff ()
+newGame {st} {rules} new = call (NewGame {st} {rules} new)
+
+randomize : (new : Ruleset) -> { [GameEff st (MainMenu rules)] ==> [GameEff st (MainMenu new)] } Eff Ruleset
+randomize {st} {rules} new = call (Randomize {st} {rules} new)
+
+tweak : { [GameEff st (MainMenu rules)] ==> [GameEff st (Menu serpentParams rules)] } Eff ()
+tweak {st} {rules} = call (Tweak {st} {rules})
+ 
