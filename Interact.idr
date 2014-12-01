@@ -13,7 +13,6 @@ requestAnimationFrame f =
 
 instance Handler NonBlocking SideEffect where
   handle {a} () Yield k = MkSideEffect $ do 
-    putStr "Yielding control to the browser..."
     requestAnimationFrame (\delta => unSideEffect $ k delta ())
 
 instance Functor SideEffect where

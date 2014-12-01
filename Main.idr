@@ -52,15 +52,31 @@ endless = do
     True => playAgain startState
     False => value ()
 
-dummyGame : { [GAME (Playing False rules), GameClock, NONBLOCKING] } Eff ()
-dummyGame = do
+drawGame : { [GAME (Playing isPaused rules), CANVAS] } Eff ()
+drawGame {rules} = do
+  clear
+  InGame snake walls food score (MkU _ rules) <- get
+  drawSnake snake
+  traverse_ (rectCell Brown) walls
+  traverse_ (rectCell Red) food
+ where rectCell : Color -> Coord -> { [CANVAS] } Eff ()
+       rectCell color (cx, cy) = rect (cx - 10) (cx + 10) (cy - 10) (cy + 10) color
+       traverse_ : (a -> { [CANVAS] } Eff ()) -> List a -> { [CANVAS] } Eff ()
+       traverse_ _ [] = value ()
+       traverse_ f (x::xs) = do
+         f x
+         traverse_ f xs
+
+dummyGame : { [GAME (Playing False rules), GameClock, NONBLOCKING, CANVAS] } Eff ()
+dummyGame {rules} = do
   if !('GameClock :- tick !yield)
      then endless
      else value ()
+  drawGame
   dummyGame
 
 main : IO ()
 main = unSideEffect $ runInit {a = ()} {m = SideEffect} env dummyGame
-  where env : Env SideEffect [GAME (Playing False (defaults serpentParams)), GameClock, NONBLOCKING]
-        env = [startState, 'GameClock := (0, 0), ()]
+  where env : Env SideEffect [GAME (Playing False (defaults serpentParams)), GameClock, NONBLOCKING, CANVAS]
+        env = [startState, 'GameClock := (0, 0), (), Red]
 --setLoop (loop {st = Game (Playing False (defaults serpentParams))} 0 ?play ?initState)

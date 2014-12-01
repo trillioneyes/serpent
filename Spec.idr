@@ -131,6 +131,8 @@ data Serpent : (Phase -> Type) -> Effect where
   Reset : { st (MainMenu rules) ==> st (MainMenu (defaults serpentParams)) } (Serpent st) ()
   Tweak : { st (MainMenu rules) ==> st (Menu serpentParams rules) } (Serpent st) ()
 
+  Get : { st ph } (Serpent st) (st ph)
+
 GameEff : (Phase -> Type) -> Phase -> EFFECT
 GameEff st ph = MkEff (st ph) (Serpent st)
 
@@ -183,3 +185,5 @@ randomize {st} {rules} new = call (Randomize {st} {rules} new)
 tweak : { [GameEff st (MainMenu rules)] ==> [GameEff st (Menu serpentParams rules)] } Eff ()
 tweak {st} {rules} = call (Tweak {st} {rules})
  
+get : { [GameEff st ph] } Eff (st ph)
+get {st} {ph} = call (Get {st} {ph})
