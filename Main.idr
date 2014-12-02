@@ -16,7 +16,7 @@ data Frames : Nat -> Effect where
 instance Handler (Frames fps) m where
   handle (last, elapsed) (Tick delta) k =
       k ticked (if ticked then nextFrame else last, elapsed + delta)
-    where nextFrame = last + 1/cast (cast {to=Int} fps)
+    where nextFrame = last + 1000/cast (cast {to=Int} fps)
           ticked = elapsed + delta >= nextFrame
 
 FPS : Nat -> EFFECT
@@ -78,5 +78,5 @@ dummyGame {rules} = do
 main : IO ()
 main = unSideEffect $ runInit {a = ()} {m = SideEffect} env dummyGame
   where env : Env SideEffect [GAME (Playing False (defaults serpentParams)), GameClock, NONBLOCKING, CANVAS]
-        env = [startState, 'GameClock := (0, 0), (), Red]
+        env = [startState, 'GameClock := (0, 0), Nothing, Red]
 --setLoop (loop {st = Game (Playing False (defaults serpentParams))} 0 ?play ?initState)

@@ -2,7 +2,7 @@ module Interact
 import Effects
 
 data NonBlocking : Effect where
-  Yield : { () } NonBlocking Float
+  Yield : { Maybe Float } NonBlocking Float
 
 record SideEffect : Type -> Type where
   MkSideEffect : (unSideEffect : IO ()) -> SideEffect a
@@ -12,8 +12,10 @@ requestAnimationFrame f =
   mkForeign (FFun "requestAnimationFrame(%0)" [FFunction FFloat (FAny (IO ()))] FUnit) f
 
 instance Handler NonBlocking SideEffect where
-  handle {a} () Yield k = MkSideEffect $ do 
-    requestAnimationFrame (\delta => unSideEffect $ k delta ())
+  handle {a} Nothing Yield k = MkSideEffect $ do 
+    requestAnimationFrame (\timeOffset => unSideEffect $ k 0 (Just timeOffset))
+  handle {a} (Just prevFrame) Yield k = MkSideEffect $ do
+    requestAnimationFrame (\timeOffset => unSideEffect $ k (timeOffset - prevFrame) (Just timeOffset))
 
 instance Functor SideEffect where
   map {a} {b} f (MkSideEffect act) = MkSideEffect {a=b} act
@@ -23,7 +25,7 @@ instance Applicative SideEffect where
   
 
 NONBLOCKING : EFFECT
-NONBLOCKING = MkEff () NonBlocking
+NONBLOCKING = MkEff (Maybe Float) NonBlocking
 
 yield : { [NONBLOCKING] } Eff Float
 yield = call Yield
