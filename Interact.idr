@@ -1,5 +1,6 @@
 module Interact
 import Effects
+import Data.List
 
 data NonBlocking : Effect where
   Yield : { Maybe Float } NonBlocking Float
@@ -29,3 +30,31 @@ NONBLOCKING = MkEff (Maybe Float) NonBlocking
 
 yield : { [NONBLOCKING] } Eff Float
 yield = call Yield
+
+data Command = Forward | TurnLeft | TurnRight | Teleport | Reverse
+
+data Key : Type where
+  Alpha : Subset Char (so . isAlphaNum) -> Key
+  LeftArrow : Key
+  UpArrow : Key
+  RightArrow : Key
+  DownArrow : Key
+  Escape : Key
+
+getLastChar : IO (Maybe Key)
+
+data ControlConfig = MkConf (Key -> Maybe Command)
+
+data ControlConfigError = Overlapping (List Command) Key
+
+data Controls : Effect where
+  ReadCommand : { ControlConfig } Controls (Maybe Command)
+  GetConfig : { ControlConfig } Controls (List (Command, Maybe Key))
+  SetConfig : List (Command, Key) -> { ControlConfig } Controls ControlConfigError
+
+instance Handler Controls SideEffect where
+  handle (MkConf cfg) ReadCommand k = MkSideEffect $ do
+    lastChar <- getLastChar
+    unSideEffect $ k (lastChar >>= cfg) (MkConf cfg)
+  handle (MkConf cfg) GetConfig k = ?cfgToList
+  handle (MkConf cfg) (SetConfig mapping) k = ?listToCfg
