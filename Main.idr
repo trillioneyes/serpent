@@ -5,8 +5,6 @@ import Draw
 import Interact
 import Effects
 
-%include javascript "helper.js"
-
 record InputState : Type where
   MkI : {button : Maybe Char} -> InputState
 
