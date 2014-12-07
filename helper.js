@@ -7,3 +7,9 @@ function game_height() {
 function game_width() {
     return canvas.width;
 }
+
+var last_key = -1337;
+
+$( document ).keydown(function(e) {
+    last_key = e.which;
+});

@@ -32,6 +32,7 @@ yield : { [NONBLOCKING] } Eff Float
 yield = call Yield
 
 data Command = Forward | TurnLeft | TurnRight | Teleport | Reverse
+             | FaceTop | FaceLeft | FaceRight | FaceBottom
 
 data Key : Type where
   Alpha : Subset Char (so . isAlphaNum) -> Key
@@ -42,6 +43,15 @@ data Key : Type where
   Escape : Key
 
 getLastChar : IO (Maybe Key)
+getLastChar = do
+    code <- mkForeign (FFun "last_key" [] FInt)
+    return (decode code)
+  where decode : Int -> Maybe Key
+        decode 37 = Just LeftArrow
+        decode 38 = Just UpArrow
+        decode 39 = Just RightArrow
+        decode 40 = Just DownArrow
+        decode _ = Nothing
 
 data ControlConfig = MkConf (Key -> Maybe Command)
 
@@ -58,3 +68,11 @@ instance Handler Controls SideEffect where
     unSideEffect $ k (lastChar >>= cfg) (MkConf cfg)
   handle (MkConf cfg) GetConfig k = ?cfgToList
   handle (MkConf cfg) (SetConfig mapping) k = ?listToCfg
+
+defControlConfig : ControlConfig
+defControlConfig = MkConf decode where
+  decode LeftArrow = Just FaceLeft
+  decode RightArrow = Just FaceRight
+  decode UpArrow = Just FaceTop
+  decode DownArrow = Just FaceBottom
+  decode _ = Nothing
