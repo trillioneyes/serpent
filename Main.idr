@@ -43,13 +43,6 @@ startState : Game (Playing False rules)
 startState {rules} = InGame snake [] [] 0 (MkU (600, 400) rules)
   where snake = [Seg ToRight 4 (2, 0)]
 
-endless : { [GAME (Playing False rules)] } Eff ()
-endless = do
-  hit <- turn Straight
-  case hit of
-    True => playAgain startState
-    False => value ()
-
 drawGame : { [GAME (Playing isPaused rules), CANVAS] } Eff ()
 drawGame {rules} = do
   clear
@@ -65,8 +58,39 @@ drawGame {rules} = do
          f x
          traverse_ f xs
 
-dummyGame : { [GAME (Playing False rules), GameClock, NONBLOCKING, CANVAS] } Eff ()
-dummyGame {rules} = do
+SERPENT : Phase -> List EFFECT
+SERPENT ph = [GAME ph, GameClock, NONBLOCKING, CANVAS, CONTROLS]
+
+controlDirection : { [GAME (Playing p rules), CONTROLS] } Eff Direction
+controlDirection {rules} = do
+  InGame snake walls food score (MkU params rules) <- get
+  wanted <- readCommand
+  let now = the Orientation $ case snake of
+    Seg dir _ _ :: _ => dir
+    _ => ToTop
+  return $ case (now, wanted) of
+    (_, Just TurnLeft) => TurnLeft
+    (_, Just TurnRight) => TurnRight
+    (_, Just Forward) => Straight
+    (ToLeft, Just FaceTop) => TurnRight
+    (ToRight, Just FaceTop) => TurnLeft
+    (ToTop, Just FaceLeft) => TurnLeft
+    (ToBottom, Just FaceLeft) => TurnRight
+    (ToTop, Just FaceRight) => TurnRight
+    (ToBottom, Just FaceRight) => TurnLeft
+    (ToRight, Just FaceBottom) => TurnRight
+    (ToLeft, Just FaceBottom) => TurnLeft
+    _ => Straight
+
+endless : { [GAME (Playing False rules), CONTROLS] } Eff ()
+endless = do
+  hit <- turn !controlDirection
+  case hit of
+    True => playAgain startState
+    False => value ()
+
+dummyGame : { SERPENT (Playing False rules) } Eff ()
+dummyGame = do
   if !('GameClock :- tick !yield)
      then endless
      else value ()
@@ -75,6 +99,6 @@ dummyGame {rules} = do
 
 main : IO ()
 main = unSideEffect $ runInit {a = ()} {m = SideEffect} env dummyGame
-  where env : Env SideEffect [GAME (Playing False (defaults serpentParams)), GameClock, NONBLOCKING, CANVAS]
-        env = [startState, 'GameClock := (0, 0), Nothing, Red]
+  where env : Env SideEffect (SERPENT (Playing False (defaults serpentParams)))
+        env = [startState, 'GameClock := (0, 0), Nothing, Red, defControlConfig]
 --setLoop (loop {st = Game (Playing False (defaults serpentParams))} 0 ?play ?initState)

@@ -57,17 +57,26 @@ data ControlConfig = MkConf (Key -> Maybe Command)
 
 data ControlConfigError = Overlapping (List Command) Key
 
+reportControls : ControlConfig -> List (Command, Maybe Key)
+-- this should be a metavariable, but we want to be able to compile before it's done
+reportControls _ = []
+
+controls : List (Command, Key) -> Either ControlConfigError ControlConfig
+controls _ = Left (Overlapping [] UpArrow)
+
 data Controls : Effect where
   ReadCommand : { ControlConfig } Controls (Maybe Command)
   GetConfig : { ControlConfig } Controls (List (Command, Maybe Key))
-  SetConfig : List (Command, Key) -> { ControlConfig } Controls ControlConfigError
+  SetConfig : List (Command, Key) -> { ControlConfig } Controls (Maybe ControlConfigError)
 
 instance Handler Controls SideEffect where
   handle (MkConf cfg) ReadCommand k = MkSideEffect $ do
     lastChar <- getLastChar
     unSideEffect $ k (lastChar >>= cfg) (MkConf cfg)
-  handle (MkConf cfg) GetConfig k = ?cfgToList
-  handle (MkConf cfg) (SetConfig mapping) k = ?listToCfg
+  handle cfg GetConfig k = k (reportControls cfg) cfg
+  handle cfg (SetConfig mapping) k = case controls mapping of
+    Left err => k (Just err) cfg
+    Right newCfg => k Nothing newCfg
 
 defControlConfig : ControlConfig
 defControlConfig = MkConf decode where
@@ -76,3 +85,15 @@ defControlConfig = MkConf decode where
   decode UpArrow = Just FaceTop
   decode DownArrow = Just FaceBottom
   decode _ = Nothing
+
+CONTROLS : EFFECT
+CONTROLS = MkEff ControlConfig Controls
+
+readCommand : { [CONTROLS] } Eff (Maybe Command)
+readCommand = call ReadCommand
+
+getConfig : { [CONTROLS] } Eff (List (Command, Maybe Key))
+getConfig = call GetConfig
+
+setConfig : List (Command, Key) -> { [CONTROLS] } Eff (Maybe ControlConfigError)
+setConfig mapping = call (SetConfig mapping)
