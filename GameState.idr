@@ -15,6 +15,24 @@ data TailSegment = Seg Orientation Nat Coord
 Snake : Type
 Snake = List TailSegment
 
+newHead : Orientation -> Coord -> Coord
+newHead ToLeft (x, y) = (x-1, y)
+newHead ToRight (x, y) = (x+1, y)
+newHead ToTop (x, y) = (x, y-1)
+newHead ToBottom (x, y) = (x, y+1)
+
+namespace Typed
+  ||| A snake representation indexed by its tail length and head location
+  data Snake : Nat -> Coord -> Type where
+    Tiny : Orientation -> (headPos : Coord) -> Snake 0 headPos
+    Inch : (facing : Orientation) -> Snake l headPos ->
+           Snake (S l) (newHead facing headPos)
+
+  retract : Snake (S n) h -> Snake n h
+  retract (Inch facing x) = ?retract_rhs_1
+  extend : Snake n h -> (facing : Orientation) -> Snake (S n) (newHead facing h)
+  extend s facing = Inch facing s
+
 retract : Snake -> Snake
 retract [] = []
 retract [Seg dir (S length) end] = [Seg dir length end]
@@ -34,12 +52,6 @@ data Game : Phase -> Type where
   IntroScreen : (univ : Universal) -> Game (MainMenu (params univ))
 
 data Collision = Food | Wall
-
-newHead : Orientation -> Coord -> Coord
-newHead ToLeft (x, y) = (x-1, y)
-newHead ToRight (x, y) = (x+1, y)
-newHead ToTop (x, y) = (x, y-1)
-newHead ToBottom (x, y) = (x, y+1)
 
 extend : Direction -> Snake -> Snake
 extend _ [] = []
