@@ -5,10 +5,33 @@ import Effects
 Coord : Type
 Coord = (Int, Int)
 
+||| One of the four directions the snake can be facing.
 data Orientation = ToLeft | ToRight | ToTop | ToBottom
+
+instance Eq Orientation where
+  ToLeft == ToLeft = True
+  ToRight == ToRight = True
+  ToTop == ToTop = True
+  ToBottom == ToBottom = True
+  _ == _ = False
+
+||| Given a starting orientation for the snake and a destination orientation
+||| (corresponding to a key the user might have pressed in the default control
+||| scheme), return the direction to the desired orientation if that is a legal
+||| turn.
+turnDirection : (start : Orientation) -> (end : Orientation) -> Maybe Direction
+turnDirection ToLeft ToTop = Just TurnRight
+turnDirection ToLeft ToBottom = Just TurnLeft
+turnDirection ToRight ToTop = Just TurnLeft
+turnDirection ToRight ToBottom = Just TurnRight
+turnDirection ToTop ToLeft = Just TurnLeft
+turnDirection ToTop ToRight = Just TurnRight
+turnDirection ToBottom ToLeft = Just TurnRight
+turnDirection ToBottom ToRight = Just TurnLeft
+turnDirection old new = if old == new then Just Straight else Nothing
+
 ||| A tail segment contains the headward endpoint coordinate and the length
-||| of the segment. A positive length means that the headward end is down
-||| and to the right.
+||| of the segment.
 data TailSegment = Seg Orientation Nat Coord
 
 ||| A list of 'TailSegment's, with the head at the beginning.
