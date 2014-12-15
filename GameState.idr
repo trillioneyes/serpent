@@ -29,7 +29,8 @@ namespace Typed
            Snake (S l) (newHead facing headPos)
 
   retract : Snake (S n) h -> Snake n h
-  retract (Inch facing x) = ?retract_rhs_1
+  retract (Inch facing (Tiny _ h)) = Tiny facing (newHead facing h)
+  retract (Inch facing (Inch facing' oldHead)) = Inch facing (retract (Inch facing' oldHead))
   extend : Snake n h -> (facing : Orientation) -> Snake (S n) (newHead facing h)
   extend s facing = Inch facing s
 
