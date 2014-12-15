@@ -34,6 +34,19 @@ namespace Typed
   extend : Snake n h -> (facing : Orientation) -> Snake (S n) (newHead facing h)
   extend s facing = Inch facing s
 
+  segments : Snake n h -> List TailSegment
+  segments (Tiny o h) = [Seg o 0 h]
+  segments (Inch {headPos} o tail) = case slurpDirection tail of
+      (l, Nothing) => [Seg o l (newHead o headPos)]
+      (l, Just (l' ** (h' ** tail'))) => Seg o l (newHead o headPos) :: segments tail'
+    where slurpDirection : Snake l h -> (Nat, (Maybe (l' ** (h' ** Snake l' h'))))
+          slurpDirection (Tiny o' h) = if o == o'
+            then (1, Nothing)
+            else (0, Just (0 ** (h ** Tiny o' h)))
+          slurpDirection (Inch {l} {headPos} o' tail') = if o == o'
+            then let (l, rest) = slurpDirection tail' in (S l, rest)
+            else (0, Just (S l ** (newHead o' headPos ** Inch o' tail')))
+
 retract : Snake -> Snake
 retract [] = []
 retract [Seg dir (S length) end] = [Seg dir length end]
