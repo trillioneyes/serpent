@@ -107,7 +107,7 @@ extend dir (Seg o l h :: segs) =
         turn Straight o = o
         newLen : Direction -> Nat -> Nat
         newLen Straight l = S l
-        newLen _ l = 1
+        newLen _ l = 0
 
 doMove : Direction -> Game (Playing False rules) -> (Game (Playing False rules), Maybe Collision)
 doMove relDir (InGame snake walls food score univ) = (InGame newSnake newWalls newFood newScore univ, coll)
